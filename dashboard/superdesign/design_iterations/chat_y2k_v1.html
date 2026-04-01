@@ -1,0 +1,1148 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>代码交接助手 - Code Handover Agent</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --powder-petal: #efd9ce;
+            --mauve: #dec0f1;
+            --wisteria: #b79ced;
+            --soft-periwinkle: #957fef;
+            --medium-slate-blue: #7170ef;
+
+            --gradient-y2k: linear-gradient(135deg, var(--powder-petal) 0%, var(--mauve) 25%, var(--wisteria) 50%, var(--soft-periwinkle) 75%, var(--medium-slate-blue) 100%);
+
+            --background: linear-gradient(180deg, #1a0a2e 0%, #16082a 50%, #0f0520 100%);
+            --foreground: #ffffff;
+            --card: rgba(255, 255, 255, 0.08);
+            --card-foreground: #ffffff;
+            --primary: var(--soft-periwinkle);
+            --primary-foreground: #ffffff;
+            --secondary: rgba(183, 156, 239, 0.2);
+            --secondary-foreground: #ffffff;
+            --muted: rgba(255, 255, 255, 0.1);
+            --muted-foreground: rgba(255, 255, 255, 0.6);
+            --accent: var(--wisteria);
+            --border: rgba(183, 156, 239, 0.3);
+            --input: rgba(183, 156, 239, 0.15);
+            --ring: var(--soft-periwinkle);
+        }
+
+        * {
+            font-family: 'Nunito', sans-serif !important;
+        }
+
+        body {
+            background: var(--background);
+            color: var(--foreground) !important;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        .gradient-bg {
+            position: fixed;
+            inset: 0;
+            background: var(--gradient-y2k);
+            opacity: 0.12;
+            animation: gradientShift 20s ease infinite;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { opacity: 0.12; transform: scale(1) rotate(0deg); }
+            50% { opacity: 0.18; transform: scale(1.1) rotate(5deg); }
+        }
+
+        .star {
+            position: fixed;
+            width: 4px;
+            height: 4px;
+            background: var(--wisteria);
+            border-radius: 50%;
+            animation: twinkle 3s ease-in-out infinite;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.3; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.5); }
+        }
+
+        .sparkle {
+            position: fixed;
+            font-size: 20px;
+            animation: sparkleFloat 4s ease-in-out infinite;
+        }
+
+        @keyframes sparkleFloat {
+            0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.6; }
+            50% { transform: translateY(-20px) rotate(180deg); opacity: 1; }
+        }
+
+        .glow-text {
+            background: var(--gradient-y2k);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientMove 4s linear infinite;
+        }
+
+        @keyframes gradientMove {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        header {
+            background: rgba(26, 10, 46, 0.7);
+            backdrop-filter: blur(20px);
+            border-bottom: 2px solid rgba(183, 156, 239, 0.2);
+            position: relative;
+            z-index: 10;
+        }
+
+        .logo-icon {
+            background: var(--gradient-y2k);
+            background-size: 200% 200%;
+            animation: gradientMove 4s ease infinite;
+        }
+
+        .y2k-badge {
+            background: var(--gradient-y2k);
+            background-size: 200% 200%;
+            animation: gradientMove 3s ease infinite;
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            border-radius: 20px;
+            padding: 6px 16px;
+            font-weight: 700;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Step Indicator */
+        .step-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 8px 16px 4px;
+        }
+
+        .step-circle {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 800;
+            background: var(--gradient-y2k);
+            background-size: 200% 200%;
+            color: white;
+            animation: gradientMove 5s ease infinite;
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 4px 20px rgba(183, 156, 239, 0.5);
+        }
+
+        .step-circle.inactive {
+            background: rgba(183, 156, 239, 0.2);
+            color: var(--muted-foreground);
+            animation: none;
+            border: 2px solid var(--border);
+            box-shadow: none;
+        }
+
+        .step-circle.active {
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .step-line {
+            width: 40px;
+            height: 3px;
+            background: var(--gradient-y2k);
+            background-size: 200% 200%;
+            animation: gradientMove 5s ease infinite;
+            border-radius: 10px;
+        }
+
+        .step-line.inactive {
+            background: var(--border);
+            animation: none;
+        }
+
+        .step-labels {
+            display: flex;
+            justify-content: center;
+            gap: 50px;
+            margin-top: -4px;
+            margin-bottom: 4px;
+        }
+
+        .step-label {
+            font-size: 9px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .step-label.active {
+            background: var(--gradient-y2k);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientMove 4s linear infinite;
+        }
+
+        .step-label.inactive {
+            color: var(--muted-foreground);
+        }
+
+        /* Chat container */
+        .chat-container {
+            background: rgba(15, 5, 32, 0.6);
+            border: 2px solid rgba(183, 156, 239, 0.25);
+            border-radius: 20px;
+            backdrop-filter: blur(25px);
+            min-height: 400px;
+            max-height: calc(100vh - 140px);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            z-index: 10;
+        }
+
+        .messages-area {
+            background: rgba(10, 3, 25, 0.6);
+            border-radius: 20px 20px 0 0;
+            flex: 1;
+            min-height: 200px;
+            overflow-y: auto;
+        }
+
+        /* Message styles - WeChat like */
+        .message-wrapper {
+            display: flex;
+            margin-bottom: 12px;
+            animation: messageSlide 0.3s ease-out;
+        }
+
+        @keyframes messageSlide {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message-wrapper.user {
+            flex-direction: row-reverse;
+        }
+
+        .message-wrapper.ai {
+            flex-direction: row;
+        }
+
+        .message-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .avatar-ai {
+            background: var(--gradient-y2k);
+            background-size: 200% 200%;
+            animation: gradientMove 4s ease infinite;
+        }
+
+        .avatar-user {
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+        }
+
+        .message-bubble {
+            max-width: 65%;
+            padding: 10px 14px;
+            border-radius: 12px;
+            position: relative;
+        }
+
+        .message-wrapper.ai .message-bubble {
+            background: rgba(255, 255, 255, 0.95);
+            color: #1a1a2e;
+            border-top-left-radius: 2px;
+            margin-left: 8px;
+        }
+
+        .message-wrapper.user .message-bubble {
+            background: var(--gradient-y2k);
+            background-size: 200% 200%;
+            animation: gradientMove 5s ease infinite;
+            color: #1a0a2e;
+            border-top-right-radius: 2px;
+            margin-right: 8px;
+        }
+
+        .message-sender {
+            font-size: 11px;
+            font-weight: 700;
+            margin-bottom: 4px;
+            opacity: 0.7;
+        }
+
+        .message-time {
+            font-size: 9px;
+            opacity: 0.5;
+            margin-top: 4px;
+        }
+
+        .message-wrapper.ai .message-time {
+            text-align: left;
+        }
+
+        .message-wrapper.user .message-time {
+            text-align: right;
+        }
+
+        /* Markdown content */
+        .markdown-content {
+            line-height: 1.5;
+            font-size: 13px;
+        }
+
+        .markdown-content h1, .markdown-content h2, .markdown-content h3 {
+            color: var(--medium-slate-blue);
+            margin: 8px 0 4px;
+            font-size: 14px;
+        }
+
+        .markdown-content code {
+            background: rgba(183, 156, 239, 0.15);
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+
+        .markdown-content pre {
+            background: rgba(26, 10, 46, 0.8);
+            padding: 10px;
+            border-radius: 6px;
+            overflow-x: auto;
+            margin: 6px 0;
+        }
+
+        .markdown-content pre code {
+            background: none;
+            padding: 0;
+        }
+
+        .markdown-content ul, .markdown-content ol {
+            margin: 6px 0;
+            padding-left: 18px;
+        }
+
+        .markdown-content li {
+            margin: 3px 0;
+        }
+
+        .markdown-content strong {
+            color: var(--medium-slate-blue);
+        }
+
+        /* Combined Input Area */
+        .combined-input-area {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            padding: 10px;
+            background: rgba(183, 156, 239, 0.08);
+            border-top: 1px solid rgba(183, 156, 239, 0.2);
+            border-radius: 0 0 20px 20px;
+        }
+
+        .github-input-section,
+        .chat-input-section {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .github-input-wrapper,
+        .chat-input-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            max-width: 600px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .github-input,
+        .message-input {
+            background: rgba(183, 156, 239, 0.1);
+            border: 2px solid rgba(183, 156, 239, 0.3);
+            border-radius: 16px;
+            color: var(--foreground) !important;
+            flex: 1;
+            padding: 12px 16px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+        }
+
+        .github-input:focus,
+        .message-input:focus {
+            outline: none;
+            border-color: var(--ring);
+            box-shadow: 0 0 0 4px rgba(149, 127, 239, 0.2);
+        }
+
+        .github-input::placeholder,
+        .message-input::placeholder {
+            color: var(--muted-foreground);
+        }
+
+        .analyze-btn,
+        .send-btn {
+            background: var(--gradient-y2k);
+            background-size: 200% 200%;
+            animation: gradientMove 5s ease infinite;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            font-weight: 700;
+            font-size: 14px;
+            padding: 12px 20px;
+            border-radius: 16px;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+            height: 48px;
+            width: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+
+        .analyze-btn:hover:not(:disabled),
+        .send-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(183, 156, 239, 0.5);
+        }
+
+        .analyze-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Typing indicator */
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+            padding: 8px 0;
+        }
+
+        .typing-dot {
+            width: 6px;
+            height: 6px;
+            background: var(--wisteria);
+            border-radius: 50%;
+            animation: typingBounce 1.4s ease-in-out infinite;
+        }
+
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes typingBounce {
+            0%, 60%, 100% {
+                transform: translateY(0);
+                opacity: 0.4;
+            }
+            30% {
+                transform: translateY(-6px);
+                opacity: 1;
+            }
+        }
+
+        .command-chip {
+            background: rgba(183, 156, 239, 0.15);
+            border: 1px solid rgba(183, 156, 239, 0.3);
+            border-radius: 14px;
+            padding: 5px 12px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .command-chip:hover {
+            background: rgba(183, 156, 239, 0.3);
+            border-color: var(--soft-periwinkle);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            animation: statusPulse 2s ease-in-out infinite;
+        }
+
+        .status-dot.online {
+            background: #10b981;
+            box-shadow: 0 0 10px #10b981;
+        }
+
+        @keyframes statusPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .messages-area::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .messages-area::-webkit-scrollbar-track {
+            background: rgba(15, 5, 32, 0.5);
+        }
+
+        .messages-area::-webkit-scrollbar-thumb {
+            background: var(--gradient-y2k);
+            border-radius: 10px;
+        }
+
+        .suggestion-card {
+            background: rgba(183, 156, 239, 0.1);
+            border: 1px solid rgba(183, 156, 239, 0.25);
+            border-radius: 12px;
+            padding: 8px 12px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            min-height: 50px;
+            transition: all 0.3s ease;
+        }
+
+        .suggestion-card:hover {
+            background: rgba(183, 156, 239, 0.2);
+            border-color: var(--soft-periwinkle);
+        }
+
+        .loading-spinner {
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(183, 156, 239, 0.2);
+            border-top-color: var(--soft-periwinkle);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Welcome screen */
+        .welcome-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-center;
+            padding: 20px;
+            text-align: center;
+        }
+
+        /* Step indicator container */
+        .step-indicator-container {
+            display: none;
+            background: rgba(183, 156, 239, 0.04);
+            border-bottom: 1px solid rgba(183, 156, 239, 0.1);
+            padding-bottom: 8px;
+        }
+
+        .step-indicator-container.visible {
+            display: block;
+        }
+
+        /* Status display */
+        .status-display {
+            display: none;
+            text-align: center;
+            padding: 8px 16px;
+            font-size: 12px;
+            color: var(--muted-foreground);
+            background: rgba(183, 156, 239, 0.05);
+            border-top: 1px solid rgba(183, 156, 239, 0.1);
+        }
+
+        .status-display.visible {
+            display: block;
+        }
+
+        .status-display .loading-spinner {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(183, 156, 239, 0.2);
+            border-top-color: var(--soft-periwinkle);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+    <div class="gradient-bg"></div>
+
+    <!-- Stars -->
+    <div class="star" style="top: 8%; left: 6%;"></div>
+    <div class="star" style="top: 18%; right: 10%; animation-delay: 0.5s;"></div>
+    <div class="star" style="top: 50%; left: 5%; animation-delay: 1s;"></div>
+    <div class="star" style="top: 72%; right: 8%; animation-delay: 1.5s;"></div>
+    <div class="star" style="top: 35%; left: 16%; animation-delay: 2s;"></div>
+    <div class="star" style="top: 62%; right: 15%; animation-delay: 0.8s;"></div>
+    <div class="star" style="top: 25%; right: 25%; animation-delay: 1.2s;"></div>
+    <div class="star" style="top: 85%; left: 12%; animation-delay: 2.2s;"></div>
+
+    <!-- Sparkles -->
+    <div class="sparkle" style="top: 12%; right: 18%; animation-delay: 0.3s;">✦</div>
+    <div class="sparkle" style="top: 58%; left: 10%; animation-delay: 1.2s;">✧</div>
+    <div class="sparkle" style="top: 42%; right: 6%; animation-delay: 2.1s;">★</div>
+    <div class="sparkle" style="top: 28%; left: 22%; animation-delay: 0.7s;">✦</div>
+    <div class="sparkle" style="top: 75%; right: 20%; animation-delay: 1.8s;">✧</div>
+    <div class="sparkle" style="top: 55%; left: 8%; animation-delay: 2.5s;">★</div>
+
+    <!-- Header -->
+    <header class="relative z-30 flex items-center justify-between px-6 py-3">
+        <div class="flex items-center gap-3">
+            <div class="logo-icon w-9 h-9 rounded-xl flex items-center justify-center">
+                <i data-lucide="git-branch" class="w-5 h-5 text-white"></i>
+            </div>
+            <div>
+                <span class="font-extrabold">代码交接助手</span>
+                <div class="flex items-center gap-1">
+                    <div class="status-dot online"></div>
+                    <span class="text-xs text-green-400">AI在线</span>
+                </div>
+            </div>
+        </div>
+        <div class="flex items-center gap-3">
+            <!-- Back to Report Button -->
+            <button id="backToReportBtn" class="hidden px-3 py-1.5 rounded-lg text-sm font-semibold transition-all" style="background: rgba(183, 156, 239, 0.15); border: 1px solid rgba(183, 156, 239, 0.3); color: var(--foreground);" onclick="backToReport()">
+                <i data-lucide="file-text" class="w-3 h-3 inline mr-1"></i>
+                查看报告
+            </button>
+            <!-- Download Report Button -->
+            <button id="downloadReportBtn" class="hidden px-3 py-1.5 rounded-lg text-sm font-semibold transition-all" style="background: rgba(183, 156, 239, 0.15); border: 1px solid rgba(183, 156, 239, 0.3); color: var(--foreground);" onclick="downloadCurrentReport()">
+                <i data-lucide="download" class="w-3 h-3 inline mr-1"></i>
+                下载报告
+            </button>
+            <span class="y2k-badge text-xs">🤝 Handover</span>
+            <button onclick="clearChat()" class="p-2 rounded-xl transition-colors" style="background: rgba(183, 156, 239, 0.15); border: 2px solid rgba(183, 156, 239, 0.3);">
+                <i data-lucide="refresh-cw" class="w-4 h-4" style="color: var(--foreground);"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="relative z-20 flex-1 px-4 py-2">
+        <div class="chat-container" style="width: 80%; max-width: 1400px; min-height: 500px; max-height: calc(100vh - 100px); margin: 0 auto; display: flex; flex-direction: column;">
+            <!-- Messages Area -->
+            <div class="messages-area flex-1 overflow-y-auto p-4" id="messagesArea">
+                <!-- Welcome Screen -->
+                <div class="welcome-screen" id="welcomeScreen">
+                    <div class="avatar-ai w-14 h-14 rounded-2xl flex items-center justify-center mb-3">
+                        <i data-lucide="users" class="w-7 h-7 text-white"></i>
+                    </div>
+                    <h1 class="text-xl font-black mb-2 glow-text">🤝 代码交接助手</h1>
+                    <p class="text-sm mb-4" style="color: var(--muted-foreground);">
+                        让项目交接更轻松 · 快速理解代码结构
+                    </p>
+
+                    <!-- Suggestions -->
+                    <div class="grid grid-cols-3 gap-2 mb-3 w-full max-w-md">
+                        <div class="suggestion-card" onclick="sendSuggestion('请生成项目概述')">
+                            <i data-lucide="layout-dashboard" class="w-3 h-3 mb-0.5" style="color: var(--soft-periwinkle);"></i>
+                            <div class="font-semibold text-xs text-center">项目概述</div>
+                        </div>
+                        <div class="suggestion-card" onclick="sendSuggestion('请展示目录结构')">
+                            <i data-lucide="folder-tree" class="w-3 h-3 mb-0.5" style="color: var(--soft-periwinkle);"></i>
+                            <div class="font-semibold text-xs text-center">目录结构</div>
+                        </div>
+                        <div class="suggestion-card" onclick="sendSuggestion('请说明入口点')">
+                            <i data-lucide="play-circle" class="w-3 h-3 mb-0.5" style="color: var(--soft-periwinkle);"></i>
+                            <div class="font-semibold text-xs text-center">入口点</div>
+                        </div>
+                        <div class="suggestion-card" onclick="sendSuggestion('请介绍核心模块')">
+                            <i data-lucide="package" class="w-3 h-3 mb-0.5" style="color: var(--soft-periwinkle);"></i>
+                            <div class="font-semibold text-xs text-center">核心模块</div>
+                        </div>
+                        <div class="suggestion-card" onclick="sendSuggestion('请分析依赖关系')">
+                            <i data-lucide="git-branch" class="w-3 h-3 mb-0.5" style="color: var(--soft-periwinkle);"></i>
+                            <div class="font-semibold text-xs text-center">依赖关系</div>
+                        </div>
+                        <div class="suggestion-card" onclick="sendSuggestion('请介绍项目人员')">
+                            <i data-lucide="users" class="w-3 h-3 mb-0.5" style="color: var(--soft-periwinkle);"></i>
+                            <div class="font-semibold text-xs text-center">项目人员</div>
+                        </div>
+                    </div>
+
+                    <!-- Quick commands -->
+                    <div class="flex items-center justify-center gap-2 flex-wrap">
+                        <span class="text-xs" style="color: var(--muted-foreground);">快捷命令:</span>
+                        <button class="command-chip" onclick="sendCommand('/reset')">/reset</button>
+                        <button class="command-chip" onclick="sendCommand('/skills')">/skills</button>
+                    </div>
+                </div>
+
+                <!-- Messages container -->
+                <div id="messagesList" style="display: none;"></div>
+
+                <!-- Typing indicator -->
+                <div id="typingIndicator" style="display: none;">
+                    <div class="message-wrapper ai">
+                        <div class="message-avatar avatar-ai">
+                            <i data-lucide="sparkles" class="w-4 h-4 text-white"></i>
+                        </div>
+                        <div class="message-bubble">
+                            <div class="typing-indicator">
+                                <div class="typing-dot"></div>
+                                <div class="typing-dot"></div>
+                                <div class="typing-dot"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step Indicator -->
+            <div class="step-indicator-container" id="stepIndicatorContainer">
+                <div class="step-indicator">
+                    <div class="step-circle" id="step1">①</div>
+                    <div class="step-line" id="line1"></div>
+                    <div class="step-circle inactive" id="step2">②</div>
+                    <div class="step-line inactive" id="line2"></div>
+                    <div class="step-circle inactive" id="step3">③</div>
+                </div>
+                <div class="step-labels">
+                    <span class="step-label active" id="label1">仓库链接</span>
+                    <span class="step-label inactive" id="label2">分析中</span>
+                    <span class="step-label inactive" id="label3">完成报告</span>
+                </div>
+                <!-- Status Display -->
+                <div class="status-display" id="statusDisplay">
+                    <div class="loading-spinner"></div>
+                    <span id="statusText">正在初始化...</span>
+                </div>
+            </div>
+
+            <!-- Combined Input Area -->
+            <div class="combined-input-area">
+                <!-- GitHub Input -->
+                <div class="github-input-section">
+                    <div class="github-input-wrapper">
+                        <input
+                            type="text"
+                            id="githubUrl"
+                            placeholder="输入GitHub仓库链接或本地项目路径（如 D:\code\project）"
+                            class="github-input"
+                        >
+                        <button
+                            id="analyzeBtn"
+                            class="analyze-btn flex items-center gap-1"
+                            onclick="analyzeRepository()"
+                        >
+                            <i data-lucide="sparkles" class="w-3 h-3"></i>
+                            <span id="analyzeBtnText">分析</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Chat Input -->
+                <div class="chat-input-section">
+                    <div class="chat-input-wrapper">
+                        <input
+                            type="text"
+                            id="messageInput"
+                            placeholder="与AI助手对话..."
+                            class="message-input"
+                            autocomplete="off"
+                        >
+                        <button
+                            id="sendBtn"
+                            class="send-btn flex items-center gap-1"
+                            onclick="sendMessage()"
+                        >
+                            <i data-lucide="send" class="w-4 h-4"></i>
+                            <span class="text-sm">发送</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        lucide.createIcons();
+
+        const messagesArea = document.getElementById('messagesArea');
+        const messagesList = document.getElementById('messagesList');
+        const welcomeScreen = document.getElementById('welcomeScreen');
+        const typingIndicator = document.getElementById('typingIndicator');
+        const messageInput = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const githubUrl = document.getElementById('githubUrl');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const analyzeBtnText = document.getElementById('analyzeBtnText');
+        const stepIndicatorContainer = document.getElementById('stepIndicatorContainer');
+        const statusDisplay = document.getElementById('statusDisplay');
+        const statusText = document.getElementById('statusText');
+        const backToReportBtn = document.getElementById('backToReportBtn');
+        const downloadReportBtn = document.getElementById('downloadReportBtn');
+
+        // Step elements
+        const step1 = document.getElementById('step1');
+        const step2 = document.getElementById('step2');
+        const step3 = document.getElementById('step3');
+        const line1 = document.getElementById('line1');
+        const line2 = document.getElementById('line2');
+        const label1 = document.getElementById('label1');
+        const label2 = document.getElementById('label2');
+        const label3 = document.getElementById('label3');
+
+        let isProcessing = false;
+        let hasMessages = false;
+        let currentAnalysisId = null;
+
+        const API_BASE = window.location.origin;
+
+        function formatTime(date) {
+            return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+        }
+
+        function scrollToBottom() {
+            messagesArea.scrollTop = messagesArea.scrollHeight;
+        }
+
+        function hideWelcome() {
+            if (!hasMessages) {
+                welcomeScreen.style.display = 'none';
+                messagesList.style.display = 'block';
+                hasMessages = true;
+            }
+        }
+
+        function updateSteps(step) {
+            [step1, step2, step3].forEach(el => el.classList.remove('active'));
+            [line1, line2].forEach(el => el.classList.add('inactive'));
+            [label1, label2, label3].forEach(el => {
+                el.classList.remove('active');
+                el.classList.add('inactive');
+            });
+
+            if (step >= 1) {
+                step1.classList.remove('inactive');
+                line1.classList.remove('inactive');
+                label1.classList.remove('inactive');
+                label1.classList.add('active');
+            }
+            if (step >= 2) {
+                step2.classList.remove('inactive');
+                step2.classList.add('active');
+                line2.classList.remove('inactive');
+                label2.classList.remove('inactive');
+                label2.classList.add('active');
+            }
+            if (step >= 3) {
+                step3.classList.remove('inactive', 'active');
+                label3.classList.remove('inactive');
+                label3.classList.add('active');
+            }
+        }
+
+        function addMessage(content, isUser) {
+            hideWelcome();
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message-wrapper ${isUser ? 'user' : 'ai'}`;
+
+            if (isUser) {
+                messageDiv.innerHTML = `
+                    <div class="message-avatar avatar-user">
+                        <i data-lucide="user" class="w-4 h-4 text-white"></i>
+                    </div>
+                    <div class="message-bubble">
+                        <div class="text-xs">${escapeHtml(content)}</div>
+                        <div class="message-time">${formatTime(new Date())}</div>
+                    </div>
+                `;
+            } else {
+                messageDiv.innerHTML = `
+                    <div class="message-avatar avatar-ai">
+                        <i data-lucide="sparkles" class="w-4 h-4 text-white"></i>
+                    </div>
+                    <div class="message-bubble">
+                        <div class="markdown-content">${marked.parse(content)}</div>
+                        <div class="message-time">${formatTime(new Date())}</div>
+                    </div>
+                `;
+            }
+
+            messagesList.appendChild(messageDiv);
+            lucide.createIcons();
+            scrollToBottom();
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function setTyping(show) {
+            typingIndicator.style.display = show ? 'block' : 'none';
+            if (show) scrollToBottom();
+        }
+
+        function sendSuggestion(text) {
+            messageInput.value = text;
+            sendMessage();
+        }
+
+        function sendCommand(cmd) {
+            messageInput.value = cmd;
+            sendMessage();
+        }
+
+        function clearChat() {
+            // 清空消息列表
+            messagesList.innerHTML = '';
+            welcomeScreen.style.display = 'flex';
+            messagesList.style.display = 'none';
+            hasMessages = false;
+            currentAnalysisId = null;
+
+            // 重置状态指示器（添加空值检查）
+            if (stepIndicatorContainer) {
+                stepIndicatorContainer.classList.remove('visible');
+            }
+            if (statusDisplay) {
+                statusDisplay.classList.remove('visible');
+            }
+            if (typeof updateSteps === 'function') {
+                try {
+                    updateSteps(1);
+                } catch (e) {
+                    console.log('updateSteps error:', e);
+                }
+            }
+
+            // 隐藏按钮
+            backToReportBtn.classList.add('hidden');
+            downloadReportBtn.classList.add('hidden');
+
+            // 清空输入框
+            messageInput.value = '';
+            githubUrl.value = '';
+
+            // 重置按钮状态
+            analyzeBtn.disabled = false;
+            analyzeBtnText.textContent = '分析';
+            isProcessing = false;
+
+            // 重新创建图标
+            lucide.createIcons();
+
+            // 显示提示
+            console.log('聊天已重置');
+        }
+
+        function backToReport() {
+            if (currentAnalysisId) {
+                window.location.href = `/report/${currentAnalysisId}`;
+            }
+        }
+
+        async function downloadCurrentReport() {
+            if (!currentAnalysisId) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/api/download/${currentAnalysisId}`);
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${currentAnalysisId}_handover_report.md`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                } else {
+                    alert('下载失败，请稍后重试');
+                }
+            } catch (error) {
+                console.error('Download error:', error);
+                alert('下载失败，请稍后重试');
+            }
+        }
+
+        async function analyzeRepository() {
+            const url = githubUrl.value.trim();
+            if (!url || isProcessing) return;
+
+            // 后端会验证输入格式，移除前端验证
+            // const isLocalPath = /^[a-zA-Z]:\\|^\.\.?\//.test(url);
+            // if (!url.includes('github.com') && !isLocalPath) {
+            //     alert('请输入有效的GitHub仓库链接或本地项目路径');
+            //     return;
+            // }
+
+            // 显示步骤指示器和状态
+            stepIndicatorContainer.classList.add('visible');
+            statusDisplay.classList.add('visible');
+            updateSteps(2);
+            analyzeBtn.disabled = true;
+            analyzeBtnText.textContent = '分析中...';
+
+            const statusMessages = [
+                '正在初始化Agent环境...',
+                '正在准备项目代码...',
+                '正在构建代码索引...',
+                '正在分析项目结构...',
+                '正在解析核心模块...',
+                '正在分析依赖关系...',
+                '正在生成交接报告...'
+            ];
+
+            let msgIndex = 0;
+            statusText.textContent = statusMessages[0];
+
+            const statusInterval = setInterval(() => {
+                msgIndex = (msgIndex + 1) % statusMessages.length;
+                statusText.textContent = statusMessages[msgIndex];
+            }, 2500);
+
+            try {
+                const response = await fetch(`${API_BASE}/api/analyze`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    clearInterval(statusInterval);
+                    updateSteps(3);
+                    currentAnalysisId = data.analysis_id;
+
+                    statusText.textContent = '✅ 分析完成！正在跳转到报告页面...';
+
+                    setTimeout(() => {
+                        window.location.href = data.redirect_url;
+                    }, 1000);
+                } else {
+                    throw new Error(data.error || '分析失败');
+                }
+            } catch (error) {
+                clearInterval(statusInterval);
+                updateSteps(1);
+                analyzeBtn.disabled = false;
+                analyzeBtnText.textContent = '分析';
+                statusDisplay.classList.remove('visible');
+                stepIndicatorContainer.classList.remove('visible');
+                alert('分析失败: ' + error.message);
+            }
+        }
+
+        async function sendMessage() {
+            const content = messageInput.value.trim();
+            if (!content || isProcessing) return;
+
+            addMessage(content, true);
+            messageInput.value = '';
+            isProcessing = true;
+            sendBtn.disabled = true;
+
+            setTyping(true);
+
+            try {
+                const response = await fetch(`${API_BASE}/api/chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: content,
+                        analysis_id: currentAnalysisId
+                    })
+                });
+
+                if (!response.ok) throw new Error('API request failed');
+
+                const data = await response.json();
+                setTyping(false);
+                addMessage(data.response, false);
+
+            } catch (error) {
+                setTyping(false);
+
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'message-wrapper ai';
+                errorDiv.innerHTML = `
+                    <div class="message-avatar" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);">
+                        <i data-lucide="alert-circle" class="w-4 h-4 text-white"></i>
+                    </div>
+                    <div class="message-bubble" style="background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.4);">
+                        <div class="text-sm" style="color: #fca5a5;">无法连接到服务器</div>
+                    </div>
+                `;
+                messagesList.appendChild(errorDiv);
+                lucide.createIcons();
+                scrollToBottom();
+            } finally {
+                isProcessing = false;
+                sendBtn.disabled = false;
+                messageInput.focus();
+            }
+        }
+
+        sendBtn.addEventListener('click', sendMessage);
+
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        githubUrl.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                analyzeRepository();
+            }
+        });
+
+        messageInput.focus();
+    </script>
+</body>
+</html>

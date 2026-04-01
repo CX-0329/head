@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>★ 目录结构 ★ HeadPose_writer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --powder-petal: #efd9ce;
+            --mauve: #dec0f1;
+            --wisteria: #b79ced;
+            --soft-periwinkle: #957fef;
+            --medium-slate-blue: #7170ef;
+
+            --gradient-y2k: linear-gradient(135deg, var(--powder-petal) 0%, var(--mauve) 25%, var(--wisteria) 50%, var(--soft-periwinkle) 75%, var(--medium-slate-blue) 100%);
+
+            --background: linear-gradient(180deg, #1a0a2e 0%, #16082a 50%, #0f0520 100%);
+            --foreground: #ffffff;
+            --card: rgba(255, 255, 255, 0.08);
+            --card-foreground: #ffffff;
+            --primary: var(--soft-periwinkle);
+            --primary-foreground: #ffffff;
+            --secondary: rgba(183, 156, 239, 0.2);
+            --secondary-foreground: #ffffff;
+            --muted: rgba(255, 255, 255, 0.1);
+            --muted-foreground: rgba(255, 255, 255, 0.6);
+            --accent: var(--wisteria);
+            --border: rgba(183, 156, 239, 0.3);
+            --input: rgba(183, 156, 239, 0.15);
+            --ring: var(--soft-periwinkle);
+        }
+
+        * {
+            font-family: 'Nunito', sans-serif !important;
+        }
+
+        body {
+            background: var(--background);
+            color: var(--foreground) !important;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+            display: flex;
+        }
+
+        .sidebar {
+            width: 260px;
+            background: rgba(26, 10, 46, 0.95);
+            backdrop-filter: blur(20px);
+            border-right: 2px solid rgba(183, 156, 239, 0.2);
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            z-index: 50;
+            overflow-y: auto;
+            padding: 20px 16px;
+        }
+
+        .sidebar-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            margin-bottom: 24px;
+            border-radius: 16px;
+            background: var(--gradient-y2k);
+            background-size: 200% 200%;
+            animation: gradientMove 4s ease infinite;
+        }
+
+        .nav-section-title {
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--muted-foreground);
+            padding: 8px 12px;
+            margin-bottom: 8px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            text-decoration: none;
+            color: var(--foreground);
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        .nav-item:hover {
+            background: rgba(183, 156, 239, 0.15);
+        }
+
+        .nav-item.active {
+            background: var(--gradient-y2k);
+            background-size: 200% 200%;
+            animation: gradientMove 4s ease infinite;
+            color: white;
+        }
+
+        .main-content {
+            margin-left: 260px;
+            flex: 1;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .gradient-bg {
+            position: absolute;
+            inset: 0;
+            background: var(--gradient-y2k);
+            opacity: 0.15;
+            animation: gradientShift 15s ease infinite;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { opacity: 0.15; transform: scale(1) rotate(0deg); }
+            50% { opacity: 0.2; transform: scale(1.1) rotate(5deg); }
+        }
+
+        .star {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: var(--wisteria);
+            border-radius: 50%;
+            animation: twinkle 3s ease-in-out infinite;
+        }
+
+        .star::before, .star::after {
+            content: '';
+            position: absolute;
+            background: var(--wisteria);
+        }
+
+        .star::before {
+            width: 100%;
+            height: 100%;
+            transform: rotate(45deg);
+        }
+
+        .star::after {
+            width: 8px;
+            height: 2px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.3; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.5); }
+        }
+
+        .sparkle {
+            position: absolute;
+            font-size: 20px;
+            animation: sparkleFloat 4s ease-in-out infinite;
+        }
+
+        @keyframes sparkleFloat {
+            0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.6; }
+            50% { transform: translateY(-20px) rotate(180deg); opacity: 1; }
+        }
+
+        .tree-container {
+            background: var(--card);
+            border: 2px solid var(--border);
+            border-radius: 24px;
+            backdrop-filter: blur(20px);
+        }
+
+        .tree-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 0;
+        }
+
+        .tree-indent {
+            padding-left: 28px;
+            position: relative;
+        }
+
+        .tree-indent::before {
+            content: '';
+            position: absolute;
+            left: 12px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: var(--gradient-y2k);
+        }
+
+        .tree-file {
+            color: var(--primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 600;
+        }
+
+        .tree-folder {
+            color: var(--wisteria);
+            font-weight: 700;
+        }
+
+        .glow-text {
+            background: var(--gradient-y2k);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientMove 4s linear infinite;
+        }
+
+        @keyframes gradientMove {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .subproject-badge {
+            background: var(--gradient-y2k);
+            background-size: 200% 200%;
+            animation: gradientMove 5s ease infinite;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        header {
+            background: rgba(26, 10, 46, 0.6);
+            backdrop-filter: blur(15px);
+            border-bottom: 2px solid rgba(183, 156, 239, 0.2);
+        }
+
+        .nav-badge {
+            background: var(--gradient-y2k);
+            background-size: 200% 200%;
+            animation: gradientMove 3s ease infinite;
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            border-radius: 20px;
+            padding: 8px 20px;
+            font-weight: 700;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .page-header {
+            background: rgba(26, 10, 46, 0.6);
+            backdrop-filter: blur(15px);
+            border-bottom: 2px solid rgba(183, 156, 239, 0.2);
+            padding: 16px 24px;
+        }
+
+        .stat-box {
+            background: rgba(183, 156, 239, 0.12);
+            border: 2px solid rgba(183, 156, 239, 0.25);
+            border-radius: 16px;
+        }
+
+        .description-box {
+            background: rgba(183, 156, 239, 0.08);
+            border: 2px solid rgba(183, 156, 239, 0.2);
+            border-radius: 16px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Animated Gradient Background -->
+    <div class="gradient-bg"></div>
+
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background: rgba(255, 255, 255, 0.2);">
+                <i data-lucide="git-fork" class="w-6 h-6 text-white"></i>
+            </div>
+            <div>
+                <div class="font-extrabold text-base">HeadPose_writer</div>
+                <div class="text-xs text-white/70">项目分析</div>
+            </div>
+        </div>
+
+        <div class="nav-section-title">分析模块</div>
+
+        <a href="page_1_overview.html" class="nav-item">
+            <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+            <span>项目概述</span>
+        </a>
+        <a href="page_2_directory.html" class="nav-item active">
+            <i data-lucide="folder-tree" class="w-5 h-5"></i>
+            <span>目录结构</span>
+        </a>
+        <a href="page_3_entrypoints.html" class="nav-item">
+            <i data-lucide="play-circle" class="w-5 h-5"></i>
+            <span>入口点</span>
+        </a>
+        <a href="page_4_modules.html" class="nav-item">
+            <i data-lucide="package" class="w-5 h-5"></i>
+            <span>核心模块</span>
+        </a>
+        <a href="page_5_dependencies.html" class="nav-item">
+            <i data-lucide="git-branch" class="w-5 h-5"></i>
+            <span>依赖关系</span>
+        </a>
+        <a href="page_6_team.html" class="nav-item">
+            <i data-lucide="users" class="w-5 h-5"></i>
+            <span>项目人员</span>
+        </a>
+    </aside>
+
+    <!-- Main Content Area -->
+    <div class="main-content">
+
+    <!-- Decorative Stars -->
+    <div class="star" style="top: 15%; left: 10%;"></div>
+    <div class="star" style="top: 25%; right: 15%; animation-delay: 0.5s;"></div>
+    <div class="star" style="top: 60%; left: 8%; animation-delay: 1s;"></div>
+    <div class="star" style="top: 70%; right: 12%; animation-delay: 1.5s;"></div>
+
+    <!-- Decorative Sparkles -->
+    <div class="sparkle" style="top: 20%; right: 25%; animation-delay: 0.3s;">✦</div>
+    <div class="sparkle" style="top: 65%; left: 15%; animation-delay: 1.2s;">✧</div>
+
+    <!-- Page Header -->
+    <header class="page-header relative z-10 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background: var(--gradient-y2k); background-size: 200% 200%; animation: gradientMove 4s ease infinite;">
+                <i data-lucide="folder-tree" class="w-6 h-6 text-white"></i>
+            </div>
+            <div>
+                <span class="font-extrabold text-lg">目录结构</span>
+            </div>
+        </div>
+        <button class="p-2 rounded-xl transition-colors" style="background: rgba(183, 156, 239, 0.15); border: 2px solid rgba(183, 156, 239, 0.3);">
+            <i data-lucide="download" class="w-5 h-5" style="color: var(--foreground);"></i>
+        </button>
+    </header>
+
+    <!-- Main Content -->
+    <main class="relative z-10 flex-1 px-8 py-8">
+        <div class="max-w-4xl mx-auto">
+            <!-- Hero Title -->
+            <div class="text-center mb-8">
+                <h1 class="text-5xl md:text-6xl font-black mb-3 glow-text" style="letter-spacing: -0.02em;">
+                    ★ 项目目录树 ★
+                </h1>
+                <p class="text-xl" style="color: var(--muted-foreground);">
+                    HeadPose_writer 完整文件结构
+                </p>
+            </div>
+
+            <!-- Tree Structure -->
+            <div class="tree-container p-8 mb-6">
+                <div class="tree-item">
+                    <span class="text-3xl">📁</span>
+                    <span class="tree-folder text-xl">HeadPose_writer/</span>
+                </div>
+
+                <div class="tree-indent">
+                    <!-- Subproject 1 -->
+                    <div class="tree-item">
+                        <span class="text-2xl">📁</span>
+                        <span class="tree-folder text-lg">HeadPoseEsimation_mediapipe_20250330/</span>
+                        <span class="subproject-badge px-3 py-1 rounded-full text-xs font-bold text-white ml-auto">姿态估计</span>
+                    </div>
+
+                    <div class="tree-indent">
+                        <div class="tree-item">
+                            <span>📄</span>
+                            <span class="tree-file">kalman_simulator.py</span>
+                            <span class="text-xs ml-auto" style="color: var(--primary);">✦ 主入口</span>
+                        </div>
+                        <div class="tree-item">
+                            <span>📄</span>
+                            <span class="tree-file">visual_pose_log.py</span>
+                            <span class="text-xs ml-auto" style="color: var(--muted-foreground);">可视化</span>
+                        </div>
+                        <div class="tree-item">
+                            <span>📄</span>
+                            <span class="tree-file">visual_poseline.py</span>
+                            <span class="text-xs ml-auto" style="color: var(--muted-foreground);">轨迹线</span>
+                        </div>
+                    </div>
+
+                    <!-- Subproject 2 -->
+                    <div class="tree-item mt-2">
+                        <span class="text-2xl">📁</span>
+                        <span class="tree-folder text-lg">Head_Pose_6Pen/</span>
+                        <span class="subproject-badge px-3 py-1 rounded-full text-xs font-bold text-white ml-auto">交互输入</span>
+                    </div>
+
+                    <div class="tree-indent">
+                        <div class="tree-item">
+                            <span>📄</span>
+                            <span class="tree-file">generate_custom_face_model_fix.py</span>
+                            <span class="text-xs ml-auto" style="color: var(--primary);">✦ 入口</span>
+                        </div>
+                        <div class="tree-item">
+                            <span>📄</span>
+                            <span class="tree-file">compare_facemodels.py</span>
+                            <span class="text-xs ml-auto" style="color: var(--muted-foreground);">对比工具</span>
+                        </div>
+                    </div>
+
+                    <div class="tree-item mt-2">
+                        <span>📄</span>
+                        <span class="tree-file">PROJECT_ANALYSIS.md</span>
+                        <span class="text-xs ml-auto" style="color: var(--muted-foreground);">本报告</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Description -->
+            <div class="description-box p-6 mb-6">
+                <div class="flex items-center gap-2 mb-3">
+                    <i data-lucide="info" class="w-5 h-5" style="color: var(--primary);"></i>
+                    <h3 class="font-extrabold text-lg">✦ 结构说明 ✦</h3>
+                </div>
+                <p class="text-base leading-relaxed" style="color: var(--muted-foreground);">
+                    项目包含两个主要子项目：HeadPoseEstimation_mediapipe_20250330 负责头部姿态估计与数据处理，Head_Pose_6Pen 实现基于姿态的六扇区字符输入系统。
+                </p>
+            </div>
+
+            <!-- Stats -->
+            <div class="grid grid-cols-4 gap-4">
+                <div class="stat-box p-4 text-center">
+                    <div class="text-3xl font-extrabold glow-text">2</div>
+                    <div class="text-xs" style="color: var(--muted-foreground);">子项目</div>
+                </div>
+                <div class="stat-box p-4 text-center">
+                    <div class="text-3xl font-extrabold glow-text">5</div>
+                    <div class="text-xs" style="color: var(--muted-foreground);">核心文件</div>
+                </div>
+                <div class="stat-box p-4 text-center">
+                    <div class="text-3xl font-extrabold glow-text">4</div>
+                    <div class="text-xs" style="color: var(--muted-foreground);">入口点</div>
+                </div>
+                <div class="stat-box p-4 text-center">
+                    <div class="text-3xl font-extrabold glow-text">.py</div>
+                    <div class="text-xs" style="color: var(--muted-foreground);">Python</div>
+                </div>
+            </div>
+        </div>
+    </main>
+    </div>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

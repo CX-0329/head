@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Agent 分析工具 - Y2K 风格</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --powder-petal: #efd9ce;
+            --mauve: #dec0f1;
+            --wisteria: #b79ced;
+            --soft-periwinkle: #957fef;
+            --medium-slate-blue: #7170ef;
+
+            --gradient-y2k: linear-gradient(135deg, var(--powder-petal) 0%, var(--mauve) 25%, var(--wisteria) 50%, var(--soft-periwinkle) 75%, var(--medium-slate-blue) 100%);
+            --gradient-y2k-reverse: linear-gradient(315deg, var(--medium-slate-blue) 0%, var(--soft-periwinkle) 25%, var(--wisteria) 50%, var(--mauve) 75%, var(--powder-petal) 100%);
+            --gradient-radial: radial-gradient(ellipse at center, var(--wisteria), var(--soft-periwinkle), var(--medium-slate-blue));
+
+            --background: linear-gradient(180deg, #1a0a2e 0%, #16082a 50%, #0f0520 100%);
+            --foreground: #ffffff;
+            --card: rgba(255, 255, 255, 0.08);
+            --card-foreground: #ffffff;
+            --primary: var(--soft-periwinkle);
+            --primary-foreground: #ffffff;
+            --secondary: rgba(183, 156, 239, 0.2);
+            --secondary-foreground: #ffffff;
+            --muted: rgba(255, 255, 255, 0.1);
+            --muted-foreground: rgba(255, 255, 255, 0.6);
+            --accent: var(--wisteria);
+            --border: rgba(183, 156, 239, 0.3);
+            --input: rgba(183, 156, 239, 0.15);
+            --ring: var(--soft-periwinkle);
+        }
+
+        * {
+            font-family: 'Nunito', sans-serif !important;
+        }
+
+        body {
+            background: var(--background);
+            color: var(--foreground) !important;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Animated gradient background */
+        .gradient-bg {
+            position: absolute;
+            inset: 0;
+            background: var(--gradient-y2k);
+            opacity: 0.15;
+            animation: gradientShift 15s ease infinite;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { opacity: 0.15; transform: scale(1) rotate(0deg); }
+            50% { opacity: 0.2; transform: scale(1.1) rotate(5deg); }
+        }
+
+        /* Stars decoration */
+        .star {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: var(--wisteria);
+            border-radius: 50%;
+            animation: twinkle 3s ease-in-out infinite;
+        }
+
+        .star::before, .star::after {
+            content: '';
+            position: absolute;
+            background: var(--wisteria);
+        }
+
+        .star::before {
+            width: 100%;
+            height: 100%;
+            transform: rotate(45deg);
+        }
+
+        .star::after {
+            width: 8px;
+            height: 2px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.3; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.5); }
+        }
+
+        .sparkle {
+            position: absolute;
+            font-size: 20px;
+            animation: sparkleFloat 4s ease-in-out infinite;
+        }
+
+        @keyframes sparkleFloat {
+            0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.6; }
+            50% { transform: translateY(-20px) rotate(180deg); opacity: 1; }
+        }
+
+        .input-field {
+            background: var(--input);
+            border: 2px solid var(--border);
+            color: var(--foreground) !important;
+            border-radius: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: var(--ring);
+            box-shadow: 0 0 0 4px rgba(149, 127, 239, 0.2), 0 0 30px rgba(149, 127, 239, 0.3);
+        }
+
+        .input-field::placeholder {
+            color: var(--muted-foreground);
+        }
+
+        .input-field.error {
+            border-color: #ef4444;
+            box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.2);
+        }
+
+        .btn-primary {
+            background: var(--gradient-y2k);
+            background-size: 200% 200%;
+            color: var(--primary-foreground) !important;
+            transition: all 0.3s ease;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            box-shadow:
+                0 8px 30px rgba(183, 156, 239, 0.4),
+                inset 0 -2px 10px rgba(0, 0, 0, 0.2),
+                inset 0 2px 10px rgba(255, 255, 255, 0.3);
+            animation: gradientMove 5s ease infinite;
+        }
+
+        @keyframes gradientMove {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow:
+                0 15px 40px rgba(183, 156, 239, 0.6),
+                inset 0 -2px 10px rgba(0, 0, 0, 0.2),
+                inset 0 2px 10px rgba(255, 255, 255, 0.3);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .glow-text {
+            background: var(--gradient-y2k);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientMove 4s linear infinite;
+            filter: drop-shadow(0 0 30px rgba(183, 156, 239, 0.5));
+        }
+
+        .trust-badge {
+            background: rgba(183, 156, 239, 0.15);
+            border: 2px solid rgba(183, 156, 239, 0.3);
+            border-radius: 16px;
+            backdrop-filter: blur(10px);
+        }
+
+        .logo-icon {
+            background: var(--gradient-y2k);
+            background-size: 200% 200%;
+            animation: gradientMove 4s ease infinite;
+        }
+
+        /* Loading Animation */
+        .loading-container {
+            display: none;
+            text-align: center;
+        }
+
+        .loading-container.active {
+            display: block;
+        }
+
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(183, 156, 239, 0.2);
+            border-top-color: var(--soft-periwinkle);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--foreground);
+        }
+
+        .loading-progress {
+            margin-top: 20px;
+            height: 4px;
+            background: rgba(183, 156, 239, 0.2);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .loading-progress-bar {
+            height: 100%;
+            background: var(--gradient-y2k);
+            background-size: 200% 200%;
+            animation: gradientMove 3s ease infinite, progress 2s ease-in-out infinite;
+            width: 0%;
+        }
+
+        @keyframes progress {
+            0% { width: 0%; }
+            50% { width: 70%; }
+            100% { width: 90%; }
+        }
+
+        /* Error Message */
+        .error-message {
+            display: none;
+            background: rgba(239, 68, 68, 0.15);
+            border: 2px solid rgba(239, 68, 68, 0.3);
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            color: #fca5a5;
+        }
+
+        .error-message.active {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        /* Step Indicator Styles */
+        .step-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .step-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 800;
+            background: var(--gradient-y2k);
+            background-size: 200% 200%;
+            color: white;
+            animation: gradientMove 5s ease infinite;
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 4px 20px rgba(183, 156, 239, 0.5);
+        }
+
+        .step-circle.inactive {
+            background: rgba(183, 156, 239, 0.2);
+            color: var(--muted-foreground);
+            animation: none;
+            border: 2px solid var(--border);
+            box-shadow: none;
+        }
+
+        .step-circle.loading {
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .step-line {
+            width: 60px;
+            height: 3px;
+            background: var(--gradient-y2k);
+            background-size: 200% 200%;
+            animation: gradientMove 5s ease infinite;
+            border-radius: 10px;
+        }
+
+        .step-line.inactive {
+            background: var(--border);
+            animation: none;
+        }
+
+        .step-labels {
+            display: flex;
+            justify-content: center;
+            gap: 72px;
+            margin-top: -16px;
+            margin-bottom: 8px;
+        }
+
+        .step-label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .step-label.active {
+            background: var(--gradient-y2k);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientMove 4s linear infinite;
+        }
+
+        .step-label.inactive {
+            color: var(--muted-foreground);
+        }
+
+        @media (max-width: 640px) {
+            .step-line {
+                width: 30px;
+            }
+            .step-labels {
+                gap: 42px;
+            }
+        }
+
+        header {
+            background: rgba(26, 10, 46, 0.6);
+            backdrop-filter: blur(15px);
+            border-bottom: 2px solid rgba(183, 156, 239, 0.2);
+        }
+
+        .y2k-badge {
+            background: var(--gradient-y2k);
+            background-size: 200% 200%;
+            animation: gradientMove 3s ease infinite;
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            border-radius: 20px;
+            padding: 6px 16px;
+            font-weight: 700;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .input-content {
+            display: block;
+        }
+
+        .input-content.hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+    <!-- Animated Gradient Background -->
+    <div class="gradient-bg"></div>
+
+    <!-- Decorative Stars -->
+    <div class="star" style="top: 15%; left: 10%;"></div>
+    <div class="star" style="top: 25%; right: 15%; animation-delay: 0.5s;"></div>
+    <div class="star" style="top: 60%; left: 8%; animation-delay: 1s;"></div>
+    <div class="star" style="top: 70%; right: 12%; animation-delay: 1.5s;"></div>
+    <div class="star" style="top: 40%; left: 20%; animation-delay: 2s;"></div>
+
+    <!-- Decorative Sparkles -->
+    <div class="sparkle" style="top: 20%; right: 25%; animation-delay: 0.3s;">✦</div>
+    <div class="sparkle" style="top: 65%; left: 15%; animation-delay: 1.2s;">✧</div>
+    <div class="sparkle" style="top: 45%; right: 10%; animation-delay: 2.1s;">★</div>
+
+    <!-- Header -->
+    <header class="relative z-10 flex items-center justify-between px-6 py-4">
+        <div class="flex items-center gap-3">
+            <div class="logo-icon w-10 h-10 rounded-xl flex items-center justify-center">
+                <i data-lucide="bar-chart-2" class="w-6 h-6 text-white"></i>
+            </div>
+            <span class="font-extrabold text-lg">AI Agent 分析工具</span>
+        </div>
+        <div class="flex items-center gap-3">
+            <span class="y2k-badge">✨ Y2K Style!</span>
+            <button class="p-2 rounded-xl transition-colors" style="background: rgba(183, 156, 239, 0.15); border: 2px solid rgba(183, 156, 239, 0.3);">
+                <i data-lucide="settings" class="w-5 h-5" style="color: var(--foreground);"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Hero Content -->
+    <main class="relative z-10 flex-1 flex items-center justify-center px-6 py-6">
+        <div class="w-full max-w-3xl text-center">
+            <!-- Main Headline -->
+            <h1 class="text-5xl md:text-6xl font-black mb-2 glow-text" style="letter-spacing: -0.02em;">
+                ★ AI-Powered ★<br>代码分析工具
+            </h1>
+            <p class="text-xl md:text-2xl mb-3" style="color: var(--muted-foreground);">
+                ✦ 秒速理解任何代码库 ✦
+            </p>
+            <p class="text-lg mb-8" style="color: var(--muted-foreground);">
+                获取架构、依赖关系和团队洞察
+            </p>
+
+            <!-- Step Indicator -->
+            <div class="step-indicator">
+                <div class="step-circle" id="step1-circle">①</div>
+                <div class="step-line" id="step1-line"></div>
+                <div class="step-circle inactive" id="step2-circle">②</div>
+                <div class="step-line inactive" id="step2-line"></div>
+                <div class="step-circle inactive" id="step3-circle">③</div>
+            </div>
+            <div class="step-labels">
+                <span class="step-label active" id="step1-label">仓库 URL</span>
+                <span class="step-label inactive" id="step2-label">配置中</span>
+                <span class="step-label inactive" id="step3-label">分析中</span>
+            </div>
+
+            <!-- Input Section -->
+            <div class="max-w-xl mx-auto mb-6 input-content" id="inputContent">
+                <!-- Error Message -->
+                <div class="error-message" id="errorMessage">
+                    <i data-lucide="alert-circle" class="w-5 h-5"></i>
+                    <span id="errorText"></span>
+                </div>
+
+                <div class="relative mb-4">
+                    <i data-lucide="link" class="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2" style="color: var(--muted-foreground);"></i>
+                    <input
+                        type="text"
+                        id="githubUrl"
+                        placeholder="粘贴你的 GitHub 仓库 URL"
+                        class="input-field w-full pl-12 pr-4 py-4 text-base"
+                        autocomplete="off"
+                    >
+                </div>
+                <button
+                    id="analyzeBtn"
+                    class="btn-primary w-full py-4 rounded-2xl font-extrabold text-lg flex items-center justify-center gap-2"
+                >
+                    <i data-lucide="sparkles" class="w-5 h-5"></i>
+                    ✨ 开始分析 ✨
+                </button>
+            </div>
+
+            <!-- Loading Section -->
+            <div class="max-w-xl mx-auto loading-container" id="loadingContent">
+                <div class="loading-spinner"></div>
+                <div class="loading-text">✨ AI 正在分析代码库... ✨</div>
+                <div class="text-sm mt-2" style="color: var(--muted-foreground);" id="loadingStatus">
+                    正在分析项目结构和依赖关系...
+                </div>
+                <div class="loading-progress">
+                    <div class="loading-progress-bar" id="progressBar"></div>
+                </div>
+            </div>
+
+            <!-- Trust Badge -->
+            <div class="flex items-center justify-center gap-6 flex-wrap">
+                <div class="trust-badge px-4 py-2 flex items-center gap-2">
+                    <i data-lucide="users" class="w-4 h-4" style="color: var(--primary);"></i>
+                    <span class="text-sm font-bold">智能 AI 驱动</span>
+                </div>
+                <div class="trust-badge px-4 py-2 flex items-center gap-2">
+                    <i data-lucide="zap" class="w-4 h-4" style="color: var(--primary);"></i>
+                    <span class="text-sm font-bold">秒速分析</span>
+                </div>
+                <div class="trust-badge px-4 py-2 flex items-center gap-2">
+                    <i data-lucide="shield" class="w-4 h-4" style="color: var(--primary);"></i>
+                    <span class="text-sm font-bold">安全可靠</span>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // DOM Elements
+        const githubUrlInput = document.getElementById('githubUrl');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const inputContent = document.getElementById('inputContent');
+        const loadingContent = document.getElementById('loadingContent');
+        const errorMessage = document.getElementById('errorMessage');
+        const errorText = document.getElementById('errorText');
+        const loadingStatus = document.getElementById('loadingStatus');
+
+        // Step elements
+        const step1Circle = document.getElementById('step1-circle');
+        const step2Circle = document.getElementById('step2-circle');
+        const step3Circle = document.getElementById('step3-circle');
+        const step1Line = document.getElementById('step1-line');
+        const step2Line = document.getElementById('step2-line');
+        const step1Label = document.getElementById('step1-label');
+        const step2Label = document.getElementById('step2-label');
+        const step3Label = document.getElementById('step3-label');
+
+        // API base URL
+        const API_BASE = window.location.origin;
+
+        // Loading messages
+        const loadingMessages = [
+            '正在克隆仓库...',
+            '正在分析项目结构...',
+            '正在检测入口点...',
+            '正在解析核心模块...',
+            '正在分析依赖关系...',
+            '正在收集项目信息...',
+            '正在生成分析报告...'
+        ];
+
+        let messageIndex = 0;
+        let messageInterval;
+
+        function showError(message) {
+            errorText.textContent = message;
+            errorMessage.classList.add('active');
+            githubUrlInput.classList.add('error');
+            setTimeout(() => {
+                errorMessage.classList.remove('active');
+                githubUrlInput.classList.remove('error');
+            }, 5000);
+        }
+
+        function updateSteps(step) {
+            // Reset all steps
+            [step1Circle, step2Circle, step3Circle].forEach(el => {
+                el.classList.remove('loading');
+                if (el !== step1Circle) el.classList.add('inactive');
+            });
+            [step1Line, step2Line].forEach(el => el.classList.add('inactive'));
+            [step1Label, step2Label, step3Label].forEach(el => el.classList.add('inactive'));
+
+            // Activate current step
+            if (step >= 1) {
+                step1Circle.classList.remove('inactive');
+                step1Line.classList.remove('inactive');
+                step1Label.classList.remove('inactive');
+                step1Label.classList.add('active');
+            }
+            if (step >= 2) {
+                step2Circle.classList.remove('inactive');
+                step2Circle.classList.add('loading');
+                step2Line.classList.remove('inactive');
+                step2Label.classList.remove('inactive');
+                step2Label.classList.add('active');
+            }
+            if (step >= 3) {
+                step3Circle.classList.remove('inactive', 'loading');
+                step3Circle.classList.add('loading');
+                step3Label.classList.remove('inactive');
+                step3Label.classList.add('active');
+            }
+        }
+
+        function startLoadingAnimation() {
+            messageIndex = 0;
+            loadingStatus.textContent = loadingMessages[0];
+            messageInterval = setInterval(() => {
+                messageIndex = (messageIndex + 1) % loadingMessages.length;
+                loadingStatus.textContent = loadingMessages[messageIndex];
+            }, 3000);
+        }
+
+        function stopLoadingAnimation() {
+            clearInterval(messageInterval);
+        }
+
+        async function analyzeRepository() {
+            const url = githubUrlInput.value.trim();
+
+            if (!url) {
+                showError('请输入 GitHub 仓库 URL');
+                return;
+            }
+
+            // Validate GitHub URL
+            if (!url.includes('github.com') && !url.includes('github.com')) {
+                showError('请输入有效的 GitHub 仓库 URL');
+                return;
+            }
+
+            // Hide input, show loading
+            inputContent.classList.add('hidden');
+            loadingContent.classList.add('active');
+            updateSteps(2);
+            startLoadingAnimation();
+
+            try {
+                const response = await fetch(`${API_BASE}/api/analyze`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ url })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    updateSteps(3);
+                    stopLoadingAnimation();
+                    loadingStatus.textContent = '✨ 分析完成！正在跳转... ✨';
+
+                    // Redirect to report page
+                    setTimeout(() => {
+                        window.location.href = data.redirect_url;
+                    }, 1000);
+                } else {
+                    throw new Error(data.error || '分析失败');
+                }
+            } catch (error) {
+                console.error('Analysis error:', error);
+                stopLoadingAnimation();
+                loadingContent.classList.remove('active');
+                inputContent.classList.remove('hidden');
+                updateSteps(1);
+                showError(error.message || '分析失败，请稍后重试');
+            }
+        }
+
+        // Event listeners
+        analyzeBtn.addEventListener('click', analyzeRepository);
+
+        githubUrlInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                analyzeRepository();
+            }
+        });
+
+        // Focus input on load
+        githubUrlInput.focus();
+    </script>
+</body>
+</html>

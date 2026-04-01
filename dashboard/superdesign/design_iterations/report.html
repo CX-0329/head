@@ -1,0 +1,1141 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>代码交接报告 - Code Handover Agent</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --powder-petal: #efd9ce;
+            --mauve: #dec0f1;
+            --wisteria: #b79ced;
+            --soft-periwinkle: #957fef;
+            --medium-slate-blue: #7170ef;
+
+            --gradient-y2k: linear-gradient(135deg, var(--powder-petal) 0%, var(--mauve) 25%, var(--wisteria) 50%, var(--soft-periwinkle) 75%, var(--medium-slate-blue) 100%);
+            --gradient-y2k-reverse: linear-gradient(315deg, var(--medium-slate-blue) 0%, var(--soft-periwinkle) 25%, var(--wisteria) 50%, var(--mauve) 75%, var(--powder-petal) 100%);
+
+            --background: linear-gradient(180deg, #1a0a2e 0%, #16082a 50%, #0f0520 100%);
+            --foreground: #ffffff;
+            --card: rgba(255, 255, 255, 0.08);
+            --card-foreground: #ffffff;
+            --primary: var(--soft-periwinkle);
+            --primary-foreground: #ffffff;
+            --secondary: rgba(183, 156, 239, 0.2);
+            --secondary-foreground: #ffffff;
+            --muted: rgba(255, 255, 255, 0.1);
+            --muted-foreground: rgba(255, 255, 255, 0.6);
+            --accent: var(--wisteria);
+            --border: rgba(183, 156, 239, 0.3);
+            --input: rgba(183, 156, 239, 0.15);
+            --ring: var(--soft-periwinkle);
+        }
+
+        * {
+            font-family: 'Nunito', sans-serif !important;
+        }
+
+        body {
+            background: var(--background);
+            color: var(--foreground) !important;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+            display: flex;
+        }
+
+        .sidebar {
+            width: 260px;
+            background: rgba(26, 10, 46, 0.95);
+            backdrop-filter: blur(20px);
+            border-right: 2px solid rgba(183, 156, 239, 0.2);
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            z-index: 50;
+            overflow-y: auto;
+            padding: 20px 16px;
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar.collapsed {
+            transform: translateX(-260px);
+        }
+
+        .sidebar-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            margin-bottom: 24px;
+            border-radius: 16px;
+            background: var(--gradient-y2k);
+            background-size: 200% 200%;
+            animation: gradientMove 4s ease infinite;
+        }
+
+        .nav-section-title {
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--muted-foreground);
+            padding: 8px 12px;
+            margin-bottom: 8px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            text-decoration: none;
+            color: var(--foreground);
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        .nav-item:hover {
+            background: rgba(183, 156, 239, 0.15);
+        }
+
+        .nav-item.active {
+            background: var(--gradient-y2k);
+            background-size: 200% 200%;
+            animation: gradientMove 4s ease infinite;
+            color: white;
+        }
+
+        .main-content {
+            margin-left: 260px;
+            flex: 1;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: margin-left 0.3s ease;
+        }
+
+        .main-content.expanded {
+            margin-left: 0;
+        }
+
+        .gradient-bg {
+            position: absolute;
+            inset: 0;
+            background: var(--gradient-y2k);
+            opacity: 0.15;
+            animation: gradientShift 15s ease infinite;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { opacity: 0.15; transform: scale(1) rotate(0deg); }
+            50% { opacity: 0.2; transform: scale(1.1) rotate(5deg); }
+        }
+
+        .star {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: var(--wisteria);
+            border-radius: 50%;
+            animation: twinkle 3s ease-in-out infinite;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.3; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.5); }
+        }
+
+        .sparkle {
+            position: absolute;
+            font-size: 20px;
+            animation: sparkleFloat 4s ease-in-out infinite;
+        }
+
+        @keyframes sparkleFloat {
+            0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.6; }
+            50% { transform: translateY(-20px) rotate(180deg); opacity: 1; }
+        }
+
+        .project-card {
+            background: var(--card);
+            border: 2px solid var(--border);
+            border-radius: 24px;
+            backdrop-filter: blur(20px);
+            transition: all 0.3s ease;
+        }
+
+        .project-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-4px);
+            box-shadow: 0 20px 50px rgba(183, 156, 239, 0.3);
+        }
+
+        .glow-text {
+            background: var(--gradient-y2k);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientMove 4s linear infinite;
+        }
+
+        @keyframes gradientMove {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .tech-badge {
+            background: var(--gradient-y2k);
+            background-size: 200% 200%;
+            animation: gradientMove 5s ease infinite;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        header {
+            background: rgba(26, 10, 46, 0.6);
+            backdrop-filter: blur(15px);
+            border-bottom: 2px solid rgba(183, 156, 239, 0.2);
+        }
+
+        .page-header {
+            background: rgba(26, 10, 46, 0.6);
+            backdrop-filter: blur(15px);
+            border-bottom: 2px solid rgba(183, 156, 239, 0.2);
+            padding: 16px 24px;
+        }
+
+        .stat-box {
+            background: rgba(183, 156, 239, 0.12);
+            border: 2px solid rgba(183, 156, 239, 0.25);
+            border-radius: 16px;
+        }
+
+        .content-section {
+            display: none;
+        }
+
+        .content-section.active {
+            display: block;
+        }
+
+        .toggle-sidebar {
+            position: fixed;
+            left: 260px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 40;
+            background: var(--gradient-y2k);
+            background-size: 200% 200%;
+            animation: gradientMove 4s ease infinite;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 0 8px 8px 0;
+            padding: 12px 8px;
+            cursor: pointer;
+            transition: left 0.3s ease;
+        }
+
+        .toggle-sidebar.collapsed {
+            left: 0;
+        }
+
+        .loading-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 400px;
+        }
+
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(183, 156, 239, 0.2);
+            border-top-color: var(--soft-periwinkle);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .markdown-content {
+            line-height: 1.8;
+        }
+
+        .markdown-content h2 {
+            font-size: 24px;
+            font-weight: 800;
+            margin-top: 24px;
+            margin-bottom: 16px;
+            color: var(--foreground);
+        }
+
+        .markdown-content h3 {
+            font-size: 20px;
+            font-weight: 700;
+            margin-top: 20px;
+            margin-bottom: 12px;
+            color: var(--foreground);
+        }
+
+        .markdown-content p {
+            margin-bottom: 16px;
+            color: var(--muted-foreground);
+        }
+
+        .markdown-content ul, .markdown-content ol {
+            margin-left: 24px;
+            margin-bottom: 16px;
+        }
+
+        .markdown-content li {
+            margin-bottom: 8px;
+            color: var(--muted-foreground);
+        }
+
+        .markdown-content code {
+            background: rgba(183, 156, 239, 0.15);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Space Mono', monospace;
+            font-size: 14px;
+        }
+
+        .markdown-content pre {
+            background: rgba(26, 10, 46, 0.8);
+            border: 2px solid rgba(183, 156, 239, 0.2);
+            border-radius: 12px;
+            padding: 16px;
+            overflow-x: auto;
+            margin-bottom: 16px;
+        }
+
+        .markdown-content pre code {
+            background: none;
+            padding: 0;
+        }
+
+        .btn-primary {
+            background: var(--gradient-y2k);
+            background-size: 200% 200%;
+            animation: gradientMove 5s ease infinite;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(183, 156, 239, 0.5);
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-260px);
+            }
+
+            .sidebar.active {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .toggle-sidebar {
+                left: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="gradient-bg"></div>
+
+    <div class="toggle-sidebar" id="sidebarToggle">
+        <i data-lucide="chevrons-left" class="w-5 h-5 text-white" id="toggleIcon"></i>
+    </div>
+
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-brand">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background: rgba(255, 255, 255, 0.2);">
+                <i data-lucide="handshake" class="w-6 h-6 text-white"></i>
+            </div>
+            <div>
+                <div class="font-extrabold text-base">代码交接</div>
+                <div class="text-xs text-white/70">Handover Agent</div>
+            </div>
+        </div>
+
+        <div class="nav-section-title">交接内容</div>
+
+        <a href="#" class="nav-item active" data-section="overview">
+            <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+            <span>项目概述</span>
+        </a>
+        <a href="#" class="nav-item" data-section="directory">
+            <i data-lucide="folder-tree" class="w-5 h-5"></i>
+            <span>目录结构</span>
+        </a>
+        <a href="#" class="nav-item" data-section="entrypoints">
+            <i data-lucide="play-circle" class="w-5 h-5"></i>
+            <span>入口点</span>
+        </a>
+        <a href="#" class="nav-item" data-section="modules">
+            <i data-lucide="package" class="w-5 h-5"></i>
+            <span>核心模块</span>
+        </a>
+        <a href="#" class="nav-item" data-section="dependencies">
+            <i data-lucide="git-branch" class="w-5 h-5"></i>
+            <span>依赖关系</span>
+        </a>
+        <a href="#" class="nav-item" data-section="team">
+            <i data-lucide="users" class="w-5 h-5"></i>
+            <span>项目人员</span>
+        </a>
+
+        <div class="nav-section-title" style="margin-top: 24px;">继续了解</div>
+
+        <a href="/" class="nav-item">
+            <i data-lucide="message-square" class="w-5 h-5"></i>
+            <span>询问AI助手</span>
+        </a>
+        <a href="#" class="nav-item" id="downloadBtn">
+            <i data-lucide="download" class="w-5 h-5"></i>
+            <span>下载交接报告</span>
+        </a>
+    </aside>
+
+    <div class="main-content" id="mainContent">
+        <div class="page-header relative z-10 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background: var(--gradient-y2k); background-size: 200% 200%; animation: gradientMove 4s ease infinite;">
+                    <i data-lucide="layout-dashboard" class="w-6 h-6 text-white" id="headerIcon"></i>
+                </div>
+                <div>
+                    <span class="font-extrabold text-lg" id="headerTitle">项目概述</span>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <a href="/" class="btn-primary px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2" style="text-decoration: none;">
+                    <i data-lucide="message-square" class="w-4 h-4"></i>
+                    <span>继续对话</span>
+                </a>
+                <button class="p-2 rounded-xl transition-colors" style="background: rgba(183, 156, 239, 0.15); border: 2px solid rgba(183, 156, 239, 0.3);" id="downloadBtnHeader">
+                    <i data-lucide="download" class="w-5 h-5" style="color: var(--foreground);"></i>
+                </button>
+            </div>
+        </div>
+
+        <main class="relative z-10 flex-1 px-8 py-8">
+            <div class="max-w-5xl mx-auto" id="contentContainer">
+                <div class="loading-container" id="loadingState">
+                    <div class="text-center">
+                        <div class="loading-spinner" style="margin: 0 auto 20px;"></div>
+                        <div class="font-extrabold text-lg glow-text">正在生成交接报告...</div>
+                        <p class="text-sm mt-2" style="color: var(--muted-foreground);">AI正在整理项目关键信息</p>
+                    </div>
+                </div>
+
+                <div id="overviewSection" class="content-section active"></div>
+                <div id="directorySection" class="content-section"></div>
+                <div id="entrypointsSection" class="content-section"></div>
+                <div id="modulesSection" class="content-section"></div>
+                <div id="dependenciesSection" class="content-section"></div>
+                <div id="teamSection" class="content-section"></div>
+            </div>
+        </main>
+    </div>
+
+    <div class="star" style="top: 15%; left: 10%;"></div>
+    <div class="star" style="top: 25%; right: 15%; animation-delay: 0.5s;"></div>
+    <div class="star" style="top: 60%; left: 8%; animation-delay: 1s;"></div>
+    <div class="star" style="top: 70%; right: 12%; animation-delay: 1.5s;"></div>
+    <div class="star" style="top: 40%; left: 20%; animation-delay: 2s;"></div>
+
+    <div class="sparkle" style="top: 20%; right: 25%; animation-delay: 0.3s;">✦</div>
+    <div class="sparkle" style="top: 65%; left: 15%; animation-delay: 1.2s;">✧</div>
+    <div class="sparkle" style="top: 45%; right: 10%; animation-delay: 2.1s;">★</div>
+
+    <script>
+        lucide.createIcons();
+
+        const pathParts = window.location.pathname.split('/');
+        const analysisId = pathParts[pathParts.length - 1];
+        const API_BASE = window.location.origin;
+
+        const sidebar = document.getElementById('sidebar');
+        const mainContent = document.getElementById('mainContent');
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        const toggleIcon = document.getElementById('toggleIcon');
+        const navItems = document.querySelectorAll('.nav-item[data-section]');
+        const contentSections = {
+            overview: document.getElementById('overviewSection'),
+            directory: document.getElementById('directorySection'),
+            entrypoints: document.getElementById('entrypointsSection'),
+            modules: document.getElementById('modulesSection'),
+            dependencies: document.getElementById('dependenciesSection'),
+            team: document.getElementById('teamSection')
+        };
+        const headerTitle = document.getElementById('headerTitle');
+        const headerIcon = document.getElementById('headerIcon');
+        const loadingState = document.getElementById('loadingState');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const downloadBtnHeader = document.getElementById('downloadBtnHeader');
+
+        const sectionInfo = {
+            overview: { title: '项目概述', icon: 'layout-dashboard' },
+            directory: { title: '目录结构', icon: 'folder-tree' },
+            entrypoints: { title: '入口点', icon: 'play-circle' },
+            modules: { title: '核心模块', icon: 'package' },
+            dependencies: { title: '依赖关系', icon: 'git-branch' },
+            team: { title: '项目人员', icon: 'users' }
+        };
+
+        sidebarToggle.addEventListener('click', () => {
+            sidebar.classList.toggle('collapsed');
+            mainContent.classList.toggle('expanded');
+            sidebarToggle.classList.toggle('collapsed');
+
+            if (sidebar.classList.contains('collapsed')) {
+                toggleIcon.setAttribute('data-lucide', 'chevrons-right');
+            } else {
+                toggleIcon.setAttribute('data-lucide', 'chevrons-left');
+            }
+            lucide.createIcons();
+        });
+
+        navItems.forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                const section = item.getAttribute('data-section');
+
+                navItems.forEach(nav => nav.classList.remove('active'));
+                item.classList.add('active');
+
+                Object.values(contentSections).forEach(section => {
+                    section.classList.remove('active');
+                });
+                contentSections[section].classList.add('active');
+
+                headerTitle.textContent = sectionInfo[section].title;
+                const iconElement = headerIcon.querySelector('i') || headerIcon;
+                iconElement.setAttribute('data-lucide', sectionInfo[section].icon);
+                lucide.createIcons();
+            });
+        });
+
+        async function downloadReport() {
+            try {
+                const response = await fetch(`${API_BASE}/api/download/${analysisId}`);
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${analysisId}_handover_report.md`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                } else {
+                    alert('下载失败，请稍后重试');
+                }
+            } catch (error) {
+                console.error('Download error:', error);
+                alert('下载失败，请稍后重试');
+            }
+        }
+
+        downloadBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            downloadReport();
+        });
+
+        downloadBtnHeader.addEventListener('click', downloadReport);
+
+        async function loadReport() {
+            try {
+                const response = await fetch(`${API_BASE}/api/report/${analysisId}`);
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    loadingState.style.display = 'none';
+
+                    renderSection('overview', data.sections.overview);
+                    renderSection('directory', data.sections.directory);
+                    renderSection('entrypoints', data.sections.entrypoints);
+                    renderSection('modules', data.sections.modules);
+                    renderSection('dependencies', data.sections.dependencies);
+                    renderSection('team', data.sections.team);
+
+                } else {
+                    loadingState.innerHTML = `
+                        <div class="text-center">
+                            <div class="text-red-400 font-extrabold text-lg mb-4">报告加载失败</div>
+                            <p class="text-sm" style="color: var(--muted-foreground);">${data.error || '未知错误'}</p>
+                            <a href="/" class="btn-primary inline-block mt-6 px-6 py-3 rounded-xl font-extrabold" style="text-decoration: none; color: white;">
+                                <i data-lucide="message-square" class="w-5 h-5 inline mr-2"></i>
+                                返回助手
+                            </a>
+                        </div>
+                    `;
+                    lucide.createIcons();
+                }
+            } catch (error) {
+                console.error('Load report error:', error);
+                loadingState.innerHTML = `
+                    <div class="text-center">
+                        <div class="text-red-400 font-extrabold text-lg mb-4">报告加载失败</div>
+                        <p class="text-sm" style="color: var(--muted-foreground);">请检查网络连接或稍后重试</p>
+                        <a href="/" class="btn-primary inline-block mt-6 px-6 py-3 rounded-xl font-extrabold" style="text-decoration: none; color: white;">
+                            <i data-lucide="message-square" class="w-5 h-5 inline mr-2"></i>
+                            返回助手
+                        </a>
+                    </div>
+                `;
+                lucide.createIcons();
+            }
+        }
+
+        function renderSection(sectionName, content) {
+            const sectionElement = contentSections[sectionName];
+
+            if (!content || content.trim() === '') {
+                sectionElement.innerHTML = `
+                    <div class="project-card p-8 text-center">
+                        <i data-lucide="file-question" class="w-16 h-16 mx-auto mb-4" style="color: var(--muted-foreground);"></i>
+                        <div class="font-extrabold text-xl mb-2">暂无信息</div>
+                        <p style="color: var(--muted-foreground);">该部分未找到相关信息</p>
+                    </div>
+                `;
+            } else {
+                const htmlContent = marked.parse(content);
+                sectionElement.innerHTML = `
+                    <div class="markdown-content">
+                        ${htmlContent}
+                    </div>
+                `;
+            }
+
+            lucide.createIcons();
+        }
+
+        // ===== 新增：模板渲染函数 =====
+
+        // 渲染项目概述
+        function renderOverview(data) {
+            const sectionElement = contentSections.overview;
+
+            let html = '';
+
+            // 标题区域
+            html += `
+                <div class="text-center mb-8">
+                    <h1 class="text-5xl md:text-6xl font-black mb-3 glow-text" style="letter-spacing: -0.02em;">
+                        ★ ${data.project_name || '项目概述'} ★
+                    </h1>
+                    <p class="text-xl md:text-2xl" style="color: var(--muted-foreground);">
+                        ${data.description || '项目分析报告'}
+                    </p>
+                </div>
+            `;
+
+            // 子项目卡片
+            if (data.subprojects && data.subprojects.length > 0) {
+                html += '<div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8">';
+                data.subprojects.forEach((subproject, index) => {
+                    html += `
+                        <div class="project-card p-6">
+                            <div class="flex items-center gap-3 mb-4">
+                                <div class="w-14 h-14 rounded-2xl flex items-center justify-center" style="background: var(--gradient-y2k); background-size: 200% 200%; animation: gradientMove 4s ease infinite;">
+                                    <i data-lucide="${index === 0 ? 'scan-face' : 'keyboard'}" class="w-7 h-7 text-white"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-extrabold text-xl">${subproject.name}</h3>
+                                    <p class="text-sm" style="color: var(--muted-foreground);">子项目</p>
+                                </div>
+                            </div>
+                            <p class="text-base mb-4 leading-relaxed" style="color: var(--muted-foreground);">
+                                ${subproject.description || '暂无描述'}
+                            </p>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+            }
+
+            // 统计信息
+            if (data.stats && data.stats.length > 0) {
+                html += '<div class="grid grid-cols-4 gap-4 mb-8">';
+                data.stats.forEach(stat => {
+                    html += `
+                        <div class="stat-box p-4 text-center">
+                            <div class="text-3xl font-extrabold glow-text">${stat.value}</div>
+                            <div class="text-xs" style="color: var(--muted-foreground);">${stat.label}</div>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+            }
+
+            sectionElement.innerHTML = html;
+            lucide.createIcons();
+        }
+
+        // 渲染目录结构
+        function renderDirectory(data) {
+            const sectionElement = contentSections.directory;
+
+            let html = `
+                <div class="text-center mb-8">
+                    <h1 class="text-5xl md:text-6xl font-black mb-3 glow-text" style="letter-spacing: -0.02em;">
+                        ★ 项目目录树 ★
+                    </h1>
+                    <p class="text-xl" style="color: var(--muted-foreground);">
+                        完整文件结构
+                    </p>
+                </div>
+            `;
+
+            // 目录树结构
+            if (data.tree_structure) {
+                html += `
+                    <div class="tree-container p-8 mb-6">
+                        <pre class="text-sm" style="color: var(--primary); white-space: pre-wrap; font-family: 'JetBrains Mono', monospace;">${data.tree_structure}</pre>
+                    </div>
+                `;
+            }
+
+            // 描述
+            if (data.description) {
+                html += `
+                    <div class="description-box p-6 mb-6">
+                        <div class="flex items-center gap-2 mb-3">
+                            <i data-lucide="info" class="w-5 h-5" style="color: var(--primary);"></i>
+                            <h3 class="font-extrabold text-lg">✦ 结构说明 ✦</h3>
+                        </div>
+                        <p class="text-base leading-relaxed" style="color: var(--muted-foreground);">
+                            ${data.description}
+                        </p>
+                    </div>
+                `;
+            }
+
+            // 统计信息
+            if (data.stats && data.stats.length > 0) {
+                html += '<div class="grid grid-cols-4 gap-4">';
+                data.stats.forEach(stat => {
+                    html += `
+                        <div class="stat-box p-4 text-center">
+                            <div class="text-3xl font-extrabold glow-text">${stat.value}</div>
+                            <div class="text-xs" style="color: var(--muted-foreground);">${stat.label}</div>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+            }
+
+            sectionElement.innerHTML = html;
+            lucide.createIcons();
+        }
+
+        // 渲染入口点
+        function renderEntrypoints(data) {
+            const sectionElement = contentSections.entrypoints;
+
+            let html = `
+                <div class="text-center mb-8">
+                    <h1 class="text-5xl md:text-6xl font-black mb-3 glow-text" style="letter-spacing: -0.02em;">
+                        ★ 程序入口点 ★
+                    </h1>
+                    <p class="text-xl" style="color: var(--muted-foreground);">
+                        各子项目的启动文件与功能说明
+                    </p>
+                </div>
+            `;
+
+            // 子项目入口文件
+            if (data.subprojects && data.subprojects.length > 0) {
+                data.subprojects.forEach((subproject, index) => {
+                    html += `
+                        <div class="subproject-header p-5 mb-6 text-white">
+                            <div class="flex items-center gap-3">
+                                <div class="icon-circle">
+                                    <i data-lucide="${index === 0 ? 'scan-face' : 'keyboard'}" class="w-6 h-6 text-white"></i>
+                                </div>
+                                <div>
+                                    <h2 class="font-extrabold text-xl">${subproject.name}</h2>
+                                    <p class="text-sm text-white/80">子项目</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="space-y-4 mb-8">
+                    `;
+
+                    if (subproject.files && subproject.files.length > 0) {
+                        subproject.files.forEach(file => {
+                            html += `
+                                <div class="entry-card p-5">
+                                    <div class="flex items-start gap-4">
+                                        <div class="icon-circle">
+                                            <i data-lucide="play" class="w-6 h-6 text-white"></i>
+                                        </div>
+                                        <div class="flex-1">
+                                            <div class="flex items-center gap-3 mb-2">
+                                                <h3 class="font-extrabold text-lg">${file.name}</h3>
+                                                <span class="file-badge px-3 py-1 rounded-full text-xs font-bold text-white">入口</span>
+                                            </div>
+                                            ${file.description ? `<p class="text-base mb-3" style="color: var(--muted-foreground);">${file.description}</p>` : ''}
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                    }
+
+                    html += '</div>';
+                });
+            }
+
+            // 总结说明
+            if (data.summary) {
+                html += `
+                    <div class="entry-card p-6 mt-8">
+                        <div class="flex items-center gap-2 mb-4">
+                            <i data-lucide="info" class="w-6 h-6" style="color: var(--primary);"></i>
+                            <h3 class="font-extrabold text-xl">✦ 使用说明 ✦</h3>
+                        </div>
+                        <p class="text-base leading-relaxed" style="color: var(--muted-foreground);">
+                            ${data.summary}
+                        </p>
+                    </div>
+                `;
+            }
+
+            sectionElement.innerHTML = html;
+            lucide.createIcons();
+        }
+
+        // 渲染核心模块
+        function renderModules(data) {
+            const sectionElement = contentSections.modules;
+
+            let html = `
+                <div class="text-center mb-8">
+                    <h1 class="text-5xl md:text-6xl font-black mb-3 glow-text" style="letter-spacing: -0.02em;">
+                        ★ 核心模块架构 ★
+                    </h1>
+                    <p class="text-xl" style="color: var(--muted-foreground);">
+                        按功能组织的核心组件说明
+                    </p>
+                </div>
+            `;
+
+            // 子项目模块
+            if (data.subprojects && data.subprojects.length > 0) {
+                data.subprojects.forEach((subproject, index) => {
+                    html += `
+                        <div class="subproject-section p-6 mb-8">
+                            <div class="subproject-title p-4 mb-6 rounded-2xl text-white">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-12 h-12 rounded-xl flex items-center justify-center" style="background: rgba(255, 255, 255, 0.2);">
+                                        <i data-lucide="${index === 0 ? 'scan-face' : 'keyboard'}" class="w-7 h-7 text-white"></i>
+                                    </div>
+                                    <div>
+                                        <h2 class="font-extrabold text-2xl">${subproject.name}</h2>
+                                        <p class="text-sm text-white/80">子项目</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 gap-4">
+                    `;
+
+                    if (subproject.modules && subproject.modules.length > 0) {
+                        subproject.modules.forEach(module => {
+                            html += `
+                                <div class="module-card p-5">
+                                    <div class="flex items-start gap-4">
+                                        <div class="module-icon">
+                                            <i data-lucide="sliders" class="w-7 h-7 text-white"></i>
+                                        </div>
+                                        <div class="flex-1">
+                                            <div class="flex items-center gap-3 mb-2">
+                                                <h3 class="font-extrabold text-xl">${module.name}</h3>
+                                                ${module.file ? `<span class="file-code px-3 py-1 rounded-lg text-xs font-bold text-white">${module.file}</span>` : ''}
+                                            </div>
+                                            ${module.description ? `<p class="text-base mb-3" style="color: var(--muted-foreground);">${module.description}</p>` : ''}
+                                            ${module.features && module.features.length > 0 ? `
+                                                <div class="flex flex-wrap gap-2">
+                                                    ${module.features.map(f => `<span class="feature-tag px-3 py-1.5 rounded-lg text-sm font-semibold">${f}</span>`).join('')}
+                                                </div>
+                                            ` : ''}
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                    }
+
+                    html += '</div></div>';
+                });
+            }
+
+            sectionElement.innerHTML = html;
+            lucide.createIcons();
+        }
+
+        // 渲染依赖关系
+        function renderDependencies(data) {
+            const sectionElement = contentSections.dependencies;
+
+            let html = `
+                <div class="text-center mb-8">
+                    <h1 class="text-5xl md:text-6xl font-black mb-3 glow-text" style="letter-spacing: -0.02em;">
+                        ★ 依赖关系 ★
+                    </h1>
+                    <p class="text-xl" style="color: var(--muted-foreground);">
+                        外部库与内部模块依赖详情
+                    </p>
+                </div>
+            `;
+
+            // 外部依赖
+            if (data.external_deps && data.external_deps.length > 0) {
+                html += `
+                    <div class="dep-section p-6 mb-6">
+                        <div class="flex items-center gap-2 mb-4">
+                            <i data-lucide="package" class="w-6 h-6" style="color: var(--primary);"></i>
+                            <h2 class="font-extrabold text-xl">✦ 外部依赖库 ✦</h2>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                `;
+                data.external_deps.forEach(dep => {
+                    html += `
+                        <div class="dep-card p-4">
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="font-extrabold text-lg" style="color: var(--primary);">${dep.name}</div>
+                                ${dep.version ? `<span class="version-tag px-2 py-1 text-xs">${dep.version}</span>` : ''}
+                            </div>
+                            ${dep.description ? `<p class="text-sm" style="color: var(--muted-foreground);">${dep.description}</p>` : ''}
+                        </div>
+                    `;
+                });
+                html += '</div></div><div class="arrow-down">↓</div>';
+            }
+
+            // 内部依赖
+            if (data.internal_deps && data.internal_deps.length > 0) {
+                html += `
+                    <div class="internal-dep p-6">
+                        <div class="flex items-center gap-2 mb-4">
+                            <i data-lucide="git-branch" class="w-6 h-6" style="color: var(--primary);"></i>
+                            <h2 class="font-extrabold text-xl">✦ 内部依赖关系 ✦</h2>
+                        </div>
+                        <div class="space-y-3">
+                `;
+                data.internal_deps.forEach(dep => {
+                    html += `
+                        <div class="bg-black/30 rounded-xl p-4">
+                            <div class="font-extrabold text-base mb-2" style="color: var(--primary);">${dep.name}</div>
+                            ${dep.description ? `<div class="text-sm leading-relaxed" style="color: var(--muted-foreground);">${dep.description}</div>` : ''}
+                        </div>
+                    `;
+                });
+                html += '</div></div>';
+            }
+
+            // 描述说明
+            if (data.description) {
+                html += `
+                    <div class="dep-section p-5 mt-6">
+                        <div class="flex items-center gap-2 mb-3">
+                            <i data-lucide="info" class="w-5 h-5" style="color: var(--primary);"></i>
+                            <span class="font-bold">✦ 依赖说明 ✦</span>
+                        </div>
+                        <p class="text-base leading-relaxed" style="color: var(--muted-foreground);">
+                            ${data.description}
+                        </p>
+                    </div>
+                `;
+            }
+
+            sectionElement.innerHTML = html;
+            lucide.createIcons();
+        }
+
+        // 渲染项目人员
+        function renderTeam(data) {
+            const sectionElement = contentSections.team;
+
+            let html = `
+                <div class="text-center mb-8">
+                    <h1 class="text-5xl md:text-6xl font-black mb-3 glow-text" style="letter-spacing: -0.02em;">
+                        ★ 项目贡献者 ★
+                    </h1>
+                    <p class="text-xl" style="color: var(--muted-foreground);">
+                        团队成员与贡献统计
+                    </p>
+                </div>
+            `;
+
+            // 贡献者列表
+            if (data.contributors && data.contributors.length > 0) {
+                // 第一位贡献者作为特色展示
+                const featured = data.contributors[0];
+                html += `
+                    <div class="contributor-card featured p-6 mb-6">
+                        <div class="flex items-start gap-5">
+                            <div class="contributor-avatar">${featured.name.charAt(0)}</div>
+                            <div class="flex-1 text-white">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <h3 class="font-extrabold text-2xl">${featured.name}</h3>
+                                    <span class="role-badge px-3 py-1 text-sm font-bold">${featured.role}</span>
+                                </div>
+                                ${featured.contributions && featured.contributions.length > 0 ? `
+                                    <div class="space-y-2">
+                                        ${featured.contributions.map(c => `
+                                            <div class="contribution-item">
+                                                <i data-lucide="commit" class="w-5 h-5 text-white/60"></i>
+                                                <span class="text-sm text-white/90">${c}</span>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                // 其他贡献者
+                if (data.contributors.length > 1) {
+                    html += '<div class="grid grid-cols-2 gap-4 mb-6">';
+                    data.contributors.slice(1).forEach(contributor => {
+                        html += `
+                            <div class="contributor-card p-5">
+                                <div class="flex items-start gap-4">
+                                    <div class="contributor-avatar">${contributor.name.charAt(0)}</div>
+                                    <div class="flex-1">
+                                        <div class="flex items-center gap-2 mb-1">
+                                            <h3 class="font-extrabold text-lg">${contributor.name}</h3>
+                                        </div>
+                                        <div class="role-badge px-2 py-1 text-xs font-semibold mb-2 inline-block">${contributor.role}</div>
+                                        ${contributor.contributions && contributor.contributions.length > 0 ? `
+                                            ${contributor.contributions.slice(0, 2).map(c => `
+                                                <div class="text-sm" style="color: var(--primary);">• ${c}</div>
+                                            `).join('')}
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    html += '</div>';
+                }
+            }
+
+            // 时间线
+            if (data.timeline) {
+                html += `
+                    <div class="contributor-card p-5 mb-6">
+                        <div class="flex items-center gap-2 mb-4">
+                            <i data-lucide="calendar" class="w-5 h-5" style="color: var(--primary);"></i>
+                            <h3 class="font-extrabold text-lg">✦ 提交时间线 ✦</h3>
+                        </div>
+                        <div class="timeline-badge p-4 rounded-xl text-white">
+                            <div class="text-sm text-white/90">${data.timeline}</div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // 统计信息
+            if (data.stats && data.stats.length > 0) {
+                html += '<div class="grid grid-cols-4 gap-4">';
+                data.stats.forEach(stat => {
+                    html += `
+                        <div class="stat-box p-4 text-center">
+                            <div class="text-3xl font-extrabold glow-text">${stat.value}</div>
+                            <div class="text-xs" style="color: var(--muted-foreground);">${stat.label}</div>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+            }
+
+            sectionElement.innerHTML = html;
+            lucide.createIcons();
+        }
+
+        // ===== 修改：加载报告函数使用新的结构化数据 =====
+
+        async function loadReport() {
+            try {
+                const response = await fetch(`${API_BASE}/api/report/${analysisId}`);
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    loadingState.style.display = 'none';
+
+                    // 使用新的模板渲染函数
+                    if (data.structured_data) {
+                        renderOverview(data.structured_data.overview);
+                        renderDirectory(data.structured_data.directory);
+                        renderEntrypoints(data.structured_data.entrypoints);
+                        renderModules(data.structured_data.modules);
+                        renderDependencies(data.structured_data.dependencies);
+                        renderTeam(data.structured_data.team);
+                    } else {
+                        // 降级：使用原始的 Markdown 渲染
+                        renderSection('overview', data.sections.overview);
+                        renderSection('directory', data.sections.directory);
+                        renderSection('entrypoints', data.sections.entrypoints);
+                        renderSection('modules', data.sections.modules);
+                        renderSection('dependencies', data.sections.dependencies);
+                        renderSection('team', data.sections.team);
+                    }
+
+                } else {
+                    loadingState.innerHTML = `
+                        <div class="text-center">
+                            <div class="text-red-400 font-extrabold text-lg mb-4">报告加载失败</div>
+                            <p class="text-sm" style="color: var(--muted-foreground);">${data.error || '未知错误'}</p>
+                            <a href="/" class="btn-primary inline-block mt-6 px-6 py-3 rounded-xl font-extrabold" style="text-decoration: none; color: white;">
+                                <i data-lucide="message-square" class="w-5 h-5 inline mr-2"></i>
+                                返回助手
+                            </a>
+                        </div>
+                    `;
+                    lucide.createIcons();
+                }
+            } catch (error) {
+                console.error('Load report error:', error);
+                loadingState.innerHTML = `
+                    <div class="text-center">
+                        <div class="text-red-400 font-extrabold text-lg mb-4">报告加载失败</div>
+                        <p class="text-sm" style="color: var(--muted-foreground);">请检查网络连接或稍后重试</p>
+                        <a href="/" class="btn-primary inline-block mt-6 px-6 py-3 rounded-xl font-extrabold" style="text-decoration: none; color: white;">
+                            <i data-lucide="message-square" class="w-5 h-5 inline mr-2"></i>
+                            返回助手
+                        </a>
+                    </div>
+                `;
+                lucide.createIcons();
+            }
+        }
+
+        loadReport();
+    </script>
+</body>
+</html>
